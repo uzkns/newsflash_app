@@ -9,10 +9,44 @@ import "package:http/http.dart" as http;
 /// They come in JSON format and need to be decoded.
 class ArticleDownloadController {
     static final String _apiKey = "6e2a35c6466845f5b2b0be20267ed9cd";
-    static final String url = "http://newsapi.org/v2/top-headlines?country=de&category=business&apiKey=6e2a35c6466845f5b2b0be20267ed9cd";
+    String _url;
     List<Article> articles = new List<Article>();
+    String _endpoint;
+    final String articleCategory;
+    final String countryCode;
+    final String searchKeyword;
 
-    //TODO remove lines marked as //DEBUG
+
+
+    ArticleDownloadController.getTopHeadlines(this.articleCategory, this.countryCode, this.searchKeyword) {
+        this._endpoint = "v2/top-headlines";
+        _buildURL();
+    }
+
+    ArticleDownloadController.getEverything(this.articleCategory, this.countryCode, this.searchKeyword) {
+        this._endpoint = "v2/everything";
+        _buildURL();
+    }
+
+
+    void _buildURL() {
+        this._url = "http://newsapi.org/" + this._endpoint + "?";
+
+        if (articleCategory != "") {
+            this._url = this._url + "category=" + this.articleCategory + "&";
+        }
+
+        if (this.countryCode != "") {
+            this._url = this._url + "country=" + this.countryCode + "&";
+        }
+
+        if (this.searchKeyword != "") {
+            this._url = this._url + "q=" + this.searchKeyword + "&";
+        }
+
+        this._url = this._url + "apiKey=" + _apiKey;
+    }
+
     /// Fetches all articles
     ///
     /// The articles will be fetched from newsapi.org and then JSON decoded
@@ -20,10 +54,10 @@ class ArticleDownloadController {
     ///
     /// return: void
     Future<void> fetch() async {
-        var resp = await http.get(url);
+        var resp = await http.get(_url);
 
         if (resp.statusCode != 200) {
-            return null; //TODO exception
+            return;
         }
 
         var jsonResp = jsonDecode(resp.body);
@@ -45,12 +79,9 @@ class ArticleDownloadController {
                 }
             });
 
-            return articles;
+            return;
         } else {
-            //TODO exception
-            return articles;
+            return;
         }
     }
 }
-
-//TODO better controls over URL

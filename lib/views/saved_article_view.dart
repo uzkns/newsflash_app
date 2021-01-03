@@ -13,8 +13,8 @@ import 'package:flutter_app/views/widgets/news_block.dart';
 /// "saved" is just another category.
 class SavedArticleView extends StatefulWidget {
 
-    final Category category;
-    SavedArticleView(this.category);
+    final Category saved;
+    SavedArticleView(this.saved);
 
     @override
     _SavedArticleViewState createState() => _SavedArticleViewState();
@@ -27,7 +27,7 @@ class _SavedArticleViewState extends State<SavedArticleView> {
     @override
   void initState() {
       super.initState();
-      articles.addAll(widget.category.getArticles());
+      articles.addAll(widget.saved.getArticles());
   }
 
 
@@ -37,7 +37,7 @@ class _SavedArticleViewState extends State<SavedArticleView> {
         appBar: AppBar(
           title: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[Text(widget.category.name)]
+              children: <Widget>[Text(widget.saved.name)]
           ),
           centerTitle: true,
           elevation: 0.0,

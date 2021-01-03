@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:esense_flutter/esense.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/controllers/article_download_controller.dart';
+import 'package:flutter_app/controllers/article_categorization_controller.dart';
 import 'package:flutter_app/controllers/article_persistence_controller.dart';
 import 'package:flutter_app/models/article.dart';
 import 'package:flutter_app/models/category.dart';
+import 'package:flutter_app/views/saved_article_view.dart';
+import 'package:flutter_app/views/settings_view.dart';
 import 'package:flutter_app/views/widgets/category_tile.dart';
 import 'package:flutter_app/views/widgets/news_block.dart';
 
@@ -23,22 +25,26 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-    //holds all articles
-    List<Article> articles = new List<Article>();
+
+    //holds all "general" articles
     ArticlePersistenceController apc = ArticlePersistenceController();
+    ArticleCategorizationController acc = ArticleCategorizationController();
     int _navigationBarIndex = 1;
     final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
-    Category dismissed = new Category.createEmpty("Dismissed", "Articles that are no longer relevant", "https://images.unsplash.com/photo-1600932717369-d507b606a25d?ixid=MXwxMjA3fDB8MHxzZWFyY2h8N3x8cmVkfGVufDB8fDB8&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60");
-    Category saved = new Category.createEmpty("Saved", "Articles that are saved for later reading", "https://images.unsplash.com/photo-1497211419994-14ae40a3c7a3?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80");
+
+
+    // saved and dismissed articles are saved as extra categories
+    Category dismissed = new Category.createEmpty("Dismissed", "", "Articles that are no longer relevant", "https://images.unsplash.com/photo-1600932717369-d507b606a25d?ixid=MXwxMjA3fDB8MHxzZWFyY2h8N3x8cmVkfGVufDB8fDB8&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60");
+    Category saved = new Category.createEmpty("Saved", "", "Articles that are saved for later reading", "https://images.unsplash.com/photo-1497211419994-14ae40a3c7a3?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80");
 
     //indicates that the fetching of articles is done
     bool _loading = true;
     //Indicates weather the app is subscribed to esense sensor events
     bool _sensing = false;
-    //indicted wether the esense is connected
+    //indicted weather the esense is connected
     bool _connected = false;
 
-    final String eSenseName = "eSense-0332"; //TODO change
+    final String eSenseName = "eSense-0332"; //TODO change to the name of the device
     StreamSubscription subscription;
     int _threshold = 5; //TODO tweak
 
@@ -64,16 +70,14 @@ class _HomeState extends State<Home> {
     /// This has to be async'd because network and file operations are async.
     /// The app can display the Articles when _loading becomes false.
     _fetchArticles() async {
-        ArticleDownloadController adc = ArticleDownloadController();
-        await adc.fetch();
-        articles = adc.articles;
+        acc.fetchForAll();
 
         List<Article> aList = await apc.loadArticleListFromDisk();
         for (Article a in aList) {
           saved.addArticle(a);
         }
 
-        ArticlePersistenceController.removeDuplicates(articles, saved.getArticles());
+        ArticleCategorizationController.removeDuplicates(acc.general.getArticles(), saved.getArticles());
 
         setState(() {
           _loading = false;
@@ -94,7 +98,7 @@ class _HomeState extends State<Home> {
     /// the dismissed-category and removes the Card from the view.
     dismissFirstArticle() {
         AnimatedListState _list = listKey.currentState;
-        dismissed.addArticle(articles.removeAt(0));
+        dismissed.addArticle(acc.general.getArticles().removeAt(0));
         _list.removeItem(0, (_, animation) => buildDismissible(context, 0, animation, TextDirection.ltr));
     }
 
@@ -114,7 +118,7 @@ class _HomeState extends State<Home> {
     /// It needs to be async for disk operations.
     saveFirstArticle() async {
         AnimatedListState _list = listKey.currentState;
-        Article a = articles.removeAt(0);
+        Article a = acc.general.getArticles().removeAt(0);
         _list.removeItem(0, (_, animation) => buildDismissible(context, 0, animation, TextDirection.rtl));
         saved.addArticle(a);
         await apc.saveArticleToDisk(a);
@@ -123,8 +127,6 @@ class _HomeState extends State<Home> {
 
     @override
     Widget build(BuildContext context) {
-      //TODO register motion controls here so that we have access to the context
-
       return Scaffold(
           appBar: AppBar(
               title: Row(
@@ -133,6 +135,19 @@ class _HomeState extends State<Home> {
               ),
             centerTitle: true,
             elevation: 0.0,
+              actions: <Widget>[
+                  IconButton(icon: const Icon(Icons.settings_outlined),
+                    tooltip: 'Settings',
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SettingsView(this.apc)
+                          )
+                      );
+                    },
+                  ),
+                ]
           ),
           body: SafeArea(
               child: _loading ? Center(
@@ -144,20 +159,18 @@ class _HomeState extends State<Home> {
                       child: Column(
                           children: <Widget>[
 
-                            // --- Top Buttons
+                            // --- Category Buttons
                               Align(
                                   alignment: Alignment(0.0, 0.0),
                                   child: Container(
                                       height: 70,
                                       child: ListView.builder(
-                                          itemCount: 2,
+                                          itemCount: acc.getAllCategories().length,
                                           shrinkWrap: true,
                                           scrollDirection: Axis.horizontal,
                                           itemBuilder: (context, index) {
-                                              List<Category> _categories = new List<Category>();
-                                              _categories.add(dismissed);
-                                              _categories.add(saved);
-                                              return CategoryTile(_categories[index]);
+
+                                              return CategoryTile(acc.getAllCategories()[index], this.apc, this.saved);
                                           }
                                       )
                                   )
@@ -170,7 +183,7 @@ class _HomeState extends State<Home> {
                                       shrinkWrap: true,
                                       physics: ClampingScrollPhysics(),
                                       key: listKey,
-                                      initialItemCount: articles.length,
+                                      initialItemCount: acc.general.getArticles().length,
                                       itemBuilder: (context, index, animation) {
                                           return buildDismissible(context, index, animation, null);
                                       }
@@ -195,34 +208,33 @@ class _HomeState extends State<Home> {
           bottomNavigationBar: BottomNavigationBar(
               items: const <BottomNavigationBarItem>[
               BottomNavigationBarItem(
-                  icon: Icon(Icons.remove_circle),
-                  label: 'Dismiss',
-              ),
-              BottomNavigationBarItem(
                   icon: Icon(Icons.home),
                   label: 'Home',
               ),
               BottomNavigationBarItem(
                   icon: Icon(Icons.save),
-                  label: 'Save',
+                  label: 'Saved',
               ),
               ],
-              currentIndex: _navigationBarIndex,
-              selectedItemColor: Colors.amber[800],
+              currentIndex: 0,
+              selectedItemColor: Colors.red[800],
               onTap: (int index) {
 
-                  //TODO replace with buttons to go to dismissed/saved articles
-                  if (articles.isEmpty) {
+                  if (acc.general.getArticles().isEmpty) {
                     return;
                   }
 
-                  if (index == 0) {
-                      dismissFirstArticle();
-                  } else if (index == 2) {
-                      saveFirstArticle();
-                  } else if (index == 1) {
-                      saved.clear();
-                      apc.clear();
+                  switch (index) {
+                    case 0: //Left -- nothing / stay on Home screen
+                      break;
+                    case 1: //Right -- saved articles
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SavedArticleView(this.saved)
+                          )
+                      );
+                      break;
                   }
               }
       ),
@@ -233,7 +245,7 @@ class _HomeState extends State<Home> {
     /// Makes Card dismissible, so that it can be "swiped away" to either
     /// direction by hand.
     SlideTransition buildDismissible(context, index, animation, direction) {
-      final article = articles[index];
+      final article = acc.general.getArticles()[index];
       return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(-1, 0),
@@ -249,16 +261,16 @@ class _HomeState extends State<Home> {
                 switch(direction) {
                   case DismissDirection.endToStart: //to the left / dismissed
                     setState(() {
-                      dismissed.addArticle(articles[index]);
-                      articles.removeAt(index);
+                      dismissed.addArticle(acc.general.getArticles()[index]);
+                      acc.general.getArticles().removeAt(index);
                     });
                     break;
                   case DismissDirection.startToEnd: //to the right / saved
                     setState(() {
-                      Article a = articles[index];
+                      Article a = acc.general.getArticles()[index];
                       saved.addArticle(a);
-                      apc.saveArticleToDisk(a); //TODO debug, it is async
-                      articles.removeAt(index);
+                      apc.saveArticleToDisk(a);
+                      acc.general.getArticles().removeAt(index);
                     });
                     break;
                   default:
@@ -269,7 +281,8 @@ class _HomeState extends State<Home> {
               background: saveBackground(),
               secondaryBackground: dismissBackground()
 
-      ));
+          )
+      );
     }
 
 

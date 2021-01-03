@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/controllers/article_categorization_controller.dart';
 import 'package:flutter_app/controllers/article_persistence_controller.dart';
 import 'package:flutter_app/models/article.dart';
 import 'package:flutter_app/models/category.dart';
 import 'package:flutter_app/views/widgets/news_block.dart';
 
+
 /// The view for viewing the Articles in a category
 ///
 /// A white bar with the category name and a scrollable list of Cards underneath
-/// Very similar to the main view, but you cannot dismiss/save articles.
 class CategoryView extends StatefulWidget {
 
   final Category category;
-  List<Article> articles = new List<Article>();
   final ArticlePersistenceController apc;
   final Category saved;
-  final Category dismissed;
-  CategoryView(this.category, this.apc, this.saved, this.dismissed);
+
+  CategoryView(this.category, this.apc, this.saved);
 
     @override
     _CategoryViewState createState() => _CategoryViewState();
@@ -23,13 +23,13 @@ class CategoryView extends StatefulWidget {
 
 class _CategoryViewState extends State<CategoryView> {
 
+  final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
 
-
-    @override
-  void initState() {
-      super.initState();
-      widget.articles.addAll(widget.category.getArticles());
-  }
+  @override
+    void initState() {
+        super.initState();
+        ArticleCategorizationController.removeDuplicates(widget.category.getArticles(), widget.saved.getArticles());
+    }
 
 
     @override
@@ -51,13 +51,13 @@ class _CategoryViewState extends State<CategoryView> {
                     // --- Articles
                     Container(
                         padding: EdgeInsets.only(top: 12),
-                        child: ListView.builder(
+                        child: AnimatedList(
                             shrinkWrap: true,
                             physics: ClampingScrollPhysics(),
-                            itemCount: widget.articles.length,
-                            itemBuilder: (context, index) {
-                              final article = widget.articles[index];
-                              return NewsBlock.fromArticle(article);
+                            key: listKey,
+                            initialItemCount: widget.category.getArticles().length,
+                            itemBuilder: (context, index, animation) {
+                              return buildDismissible(context, index, animation, null);
                             }
                         )
                     )
@@ -70,7 +70,7 @@ class _CategoryViewState extends State<CategoryView> {
     }
 
     SlideTransition buildDismissible(context, index, animation, direction) {
-      final article = widget.articles[index];
+      final article = widget.category.getArticles()[index];
       return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(-1, 0),
@@ -86,16 +86,15 @@ class _CategoryViewState extends State<CategoryView> {
                 switch(direction) {
                   case DismissDirection.endToStart: //to the left / dismissed
                     setState(() {
-                      widget.dismissed.addArticle(widget.articles[index]);
-                      widget.articles.removeAt(index);
+                      widget.category.getArticles().removeAt(index);
                     });
                     break;
                   case DismissDirection.startToEnd: //to the right / saved
                     setState(() {
-                      Article a = widget.articles[index];
+                      Article a = widget.category.getArticles()[index];
                       widget.saved.addArticle(a);
-                      widget.apc.saveArticleToDisk(a); //TODO debug, it is async
-                      widget.articles.removeAt(index);
+                      widget.apc.saveArticleToDisk(a);
+                      widget.category.getArticles().removeAt(index);
                     });
                     break;
                   default:

@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/controllers/article_persistence_controller.dart';
 import 'package:flutter_app/models/category.dart';
-import '../saved_article_view.dart';
+
+import '../category_view.dart';
 
 /// A Category tile
 ///
@@ -14,8 +16,10 @@ import '../saved_article_view.dart';
 class CategoryTile extends StatelessWidget {
 
     final Category c;
+    final ArticlePersistenceController apc;
+    final Category saved;
 
-    CategoryTile(this.c);
+    CategoryTile(this.c, this.apc, this.saved);
 
 
     @override
@@ -26,14 +30,13 @@ class CategoryTile extends StatelessWidget {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    //TODO change to category view
-                    builder: (context) => SavedArticleView(this.c)
+                    builder: (context) => CategoryView(this.c, this.apc, this.saved)
                 )
             );
           },
 
           child: Container(
-              margin: EdgeInsets.only(right: 28, left: 28),
+              margin: EdgeInsets.only(right: 10, left: 10),
               child: Stack(
                   children: <Widget>[
                       ClipRRect(
@@ -59,4 +62,6 @@ class CategoryTile extends StatelessWidget {
           ),
         );
     }
+
+
 }

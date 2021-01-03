@@ -8,14 +8,15 @@ import 'package:flutter_app/models/article.dart';
 class Category {
     final String name;
     final String description;
+    final String apiName;
     final String imgUrl;
     List<Article> _articles = new List<Article>();
 
     /// Create a new category
-    Category(this.name, this.description, this.imgUrl, this._articles);
+    Category(this.name, this.apiName, this.description, this.imgUrl, this._articles);
 
     /// Create a new empty category
-    Category.createEmpty(this.name, this.description, this.imgUrl) {
+    Category.createEmpty(this.name, this.apiName, this.description, this.imgUrl) {
       this._articles = new List<Article>();
     }
 
@@ -24,7 +25,6 @@ class Category {
     /// The article will be inserted at the beginning of the List, so that
     /// newest Articles are always at the top
     addArticle(Article a) {
-        //TODO move save-to-disk logic to here if possible
         _articles.insert(0, a);
     }
 
@@ -35,10 +35,7 @@ class Category {
         return _articles;
     }
 
-    /// Empties the List with all articles
-    ///
-    /// Probably a debug method TODO maybe remove?
-    clear() {
-        _articles = new List<Article>();
+    void addArticles(List<Article> articles) {
+        _articles.addAll(articles);
     }
 }
