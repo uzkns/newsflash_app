@@ -2,9 +2,8 @@ import 'package:flutter_app/models/article.dart';
 
 /// Model for an Article category
 ///
-/// Thus far, there are only two categories of Articles:
-///     - Saved articles
-///     - dismissed Articles
+/// It has the necessary information for all controllers and views (api keys, images, description)
+/// and a List of all Articles for the Category.
 class Category {
     final String name;
     final String description;

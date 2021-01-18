@@ -17,18 +17,22 @@ class ArticleDownloadController {
     final String searchKeyword;
 
 
-
+    /// Constructor to get the top headlines for the given Category and country.
+    /// a search keyword can be passed aswell.
     ArticleDownloadController.getTopHeadlines(this.articleCategory, this.countryCode, this.searchKeyword) {
         this._endpoint = "v2/top-headlines";
         _buildURL();
     }
 
+    /// Constructor to get every headline for the given Category and country.
+    /// a search keyword can be passed aswell.
     ArticleDownloadController.getEverything(this.articleCategory, this.countryCode, this.searchKeyword) {
         this._endpoint = "v2/everything";
         _buildURL();
     }
 
 
+    /// Builds the URL from the parameters given to the constructor.
     void _buildURL() {
         this._url = "http://newsapi.org/" + this._endpoint + "?";
 
@@ -78,7 +82,8 @@ class ArticleDownloadController {
                     articles.add(a);
                 }
             });
-
+            //TODO remove
+            print("Downloaded all articles for category " + this.articleCategory);
             return;
         } else {
             return;

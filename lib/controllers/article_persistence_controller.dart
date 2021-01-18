@@ -89,7 +89,7 @@ class ArticlePersistenceController {
 
     /// Clears the contents of the save file
     ///
-    /// This is a debug method that is called via the Settings view
+    /// This is a debug method that is called in the Settings view
     Future<File> clear() async {
         final file = await _localFile;
         List<Article> emptyList = new List<Article>();

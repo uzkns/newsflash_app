@@ -1,4 +1,6 @@
 /// The Model for an article
+/// The fields are final and set by the download controller.
+/// They correspond to the JSON values that newsapi.org provides.
 class Article {
 
   final String sourceId;

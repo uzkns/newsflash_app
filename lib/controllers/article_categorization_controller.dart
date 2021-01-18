@@ -2,8 +2,21 @@ import 'package:flutter_app/controllers/article_download_controller.dart';
 import 'package:flutter_app/models/article.dart';
 import 'package:flutter_app/models/category.dart';
 
+// TODO as Singleton
+
+/// This class controls the article categories. It is reposnsibe for filling the
+/// categories with articles and removing duplicate articles.
+///
+/// From these categories, the top horizontal-scrolling list is built.
+///
+/// Note: It does NOT hold the saved/dismissed articles! These are in home.dart
 class ArticleCategorizationController {
 
+    //The language of the articles that are to be fetched.
+    //TODO make changable by settings
+    final String _language = "de";
+
+    // All categories
     Category _business;
     Category _entertainment;
     Category _general;
@@ -12,8 +25,10 @@ class ArticleCategorizationController {
     Category _sports;
     Category _technology;
 
+    // All categories as a List
     List<Category> _categories;
 
+    /// Creates all categories. They are empty after creation.
     ArticleCategorizationController() {
         _business = new Category.createEmpty("Business", "business", "Business and finance news", "https://images.unsplash.com/photo-1491336477066-31156b5e4f35?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80");
         _entertainment = new Category.createEmpty("Entertainment", "entertainment", "Entertainment news and stars", "https://images.unsplash.com/photo-1496337589254-7e19d01cec44?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80");
@@ -33,6 +48,7 @@ class ArticleCategorizationController {
         _categories.add(_technology);
     }
 
+    // Getter for all categories
     Category get business => _business;
     Category get general => _general;
     Category get entertainment => _entertainment;
@@ -41,21 +57,34 @@ class ArticleCategorizationController {
     Category get sports => _sports;
     Category get technology => _technology;
 
+    /// Returns a List with all categories.
     List<Category> getAllCategories() {
       return _categories;
     }
 
+    /// Fetches articles for a given category.
+    /// This uses
+    ///     ArticleDownloadController->fetch()
+    /// with the categories api-name to get the top headlines for the category
+    /// and language.
     Future<void> fetchArticles(Category c) async {
-        ArticleDownloadController adc = ArticleDownloadController.getTopHeadlines(c.apiName, "de", "");
+        ArticleDownloadController adc = ArticleDownloadController.getTopHeadlines(c.apiName, _language, "");
         await adc.fetch();
         c.addArticles(adc.articles);
     }
 
-
-    void fetchForAll() {
+    /// Fetches articles for all categories
+    /// Unfortuately, the fetching cannot happen in parallel because
+    /// the view (home.dart) will not wait for it to be finished and display
+    /// an empty card list. So, we have to "await" every category to finish.
+    ///
+    /// The categories are filled after this completes.
+    Future<void> fetchForAll() async {
+        //TODO see if general can be handled extra
         for (Category c in _categories) {
-            this.fetchArticles(c);
+            await this.fetchArticles(c);
         }
+        return;
     }
 
 
